@@ -48,6 +48,28 @@ def init_db():
     )
     """)
 
+    # --- Migrations for existing databases ---
+    # Add columns safely (SQLite doesn't support IF NOT EXISTS for ALTER TABLE)
+    migrations = [
+        ("deals", "url_hash", "ALTER TABLE deals ADD COLUMN url_hash TEXT"),
+        ("deals", "category", "ALTER TABLE deals ADD COLUMN category TEXT DEFAULT 'general'"),
+        ("users", "categories", "ALTER TABLE users ADD COLUMN categories TEXT DEFAULT 'all'"),
+    ]
+    
+    for table, column, sql in migrations:
+        try:
+            cursor.execute(f"PRAGMA table_info({table})")
+            columns = [row[1] for row in cursor.fetchall()]
+            if column not in columns:
+                cursor.execute(sql)
+                logger.info(f"Migration: Added column '{column}' to '{table}'")
+        except Exception as e:
+            logger.warning(f"Migration skipped ({table}.{column}): {e}")
+
+    # Indexes
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_url_hash ON deals(url_hash)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_posted ON deals(posted, created_at)")
+
     conn.commit()
     conn.close()
     
