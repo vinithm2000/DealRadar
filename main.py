@@ -31,7 +31,7 @@ def main():
     register_handlers(app)
     
     # 5. Start Scheduler
-    start_scheduler()
+    start_scheduler(app)
     
     # 6. Run Bot
     logger.info("Bot is polling...")

@@ -7,8 +7,13 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """
     Handles /start command
     """
+    from app.db.database import save_user
     user = update.effective_user
     logger.info(f"User {user.id} started the bot")
+    
+    # Save user to DB
+    save_user(user.id)
+    
     await update.message.reply_html(
         rf"Hi {user.mention_html()}! Welcome to DealRadar. "
         f"I'll help you find the best tech deals in India. "
@@ -49,5 +54,25 @@ async def topdeal(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"🔥 {d['title']}\n"
         f"⭐ Quality Score: {d['score']}\n\n"
         f"🛒 BUY NOW: {d['affiliate_url'] or d['url']}"
+    )
+    await update.message.reply_html(message)
+async def admin_stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """
+    Handles /admin command
+    """
+    from app.utils.config import config
+    from app.db.database import get_stats
+    
+    user_id = update.effective_user.id
+    if config.ADMIN_ID and str(user_id) != str(config.ADMIN_ID):
+        await update.message.reply_text("Unauthorized. This command is for administrators only.")
+        return
+        
+    stats = get_stats()
+    message = (
+        "📊 <b>Bot Statistics</b>\n\n"
+        f"👥 Total Users: {stats['users']}\n"
+        f"📦 Total Deals: {stats['total_deals']}\n"
+        f"✅ Posted Deals: {stats['posted_deals']}\n"
     )
     await update.message.reply_html(message)

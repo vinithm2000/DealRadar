@@ -1,5 +1,4 @@
-from telegram.ext import Application, CommandHandler
-from .commands import start, deals_command, topdeal
+from .commands import start, deals_command, topdeal, admin_stats
 
 def register_handlers(app: Application):
     """
@@ -8,3 +7,4 @@ def register_handlers(app: Application):
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("deals", deals_command))
     app.add_handler(CommandHandler("topdeal", topdeal))
+    app.add_handler(CommandHandler("admin", admin_stats))

@@ -8,5 +8,6 @@ class Config:
     DB_PATH = os.getenv("DB_PATH", "data/deals.db")
     LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
     EARNKARO_ID = os.getenv("EARNKARO_ID", "YOUR_ID")
+    ADMIN_ID = os.getenv("ADMIN_ID")
 
 config = Config()

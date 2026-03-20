@@ -67,13 +67,61 @@ def save_deal(deal_data: dict):
     finally:
         conn.close()
 
-def get_latest_deals(limit=10):
+def save_user(user_id: int):
+    conn = get_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("INSERT OR IGNORE INTO users (user_id, created_at) VALUES (?, ?)", 
+                       (user_id, int(datetime.now().timestamp())))
+        conn.commit()
+    except Exception as e:
+        logger.error(f"Error saving user {user_id}: {e}")
+    finally:
+        conn.close()
+
+def get_all_users():
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT user_id FROM users")
+    users = [row[0] for row in cursor.fetchall()]
+    conn.close()
+    return users
+
+def get_latest_deals(limit=10, only_unposted=False):
     conn = get_connection()
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM deals ORDER BY score DESC, created_at DESC LIMIT ?", (limit,))
+    
+    if only_unposted:
+        cursor.execute("SELECT * FROM deals WHERE posted = 0 ORDER BY score DESC LIMIT ?", (limit,))
+    else:
+        cursor.execute("SELECT * FROM deals ORDER BY score DESC, created_at DESC LIMIT ?", (limit,))
+        
     rows = cursor.fetchall()
     conn.close()
     return [dict(row) for row in rows]
+
+def mark_deal_as_posted(deal_id: str):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE deals SET posted = 1 WHERE id = ?", (deal_id,))
+    conn.commit()
+    conn.close()
+
+def get_stats():
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT COUNT(*) FROM users")
+    user_count = cursor.fetchone()[0]
+    cursor.execute("SELECT COUNT(*) FROM deals")
+    deal_count = cursor.fetchone()[0]
+    cursor.execute("SELECT COUNT(*) FROM deals WHERE posted = 1")
+    posted_count = cursor.fetchone()[0]
+    conn.close()
+    return {
+        "users": user_count,
+        "total_deals": deal_count,
+        "posted_deals": posted_count
+    }
 
 from datetime import datetime
