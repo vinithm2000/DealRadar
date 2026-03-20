@@ -1,0 +1,7 @@
+python-telegram-bot==20.7
+requests
+feedparser
+beautifulsoup4
+apscheduler
+python-dotenv
+sqlalchemy
