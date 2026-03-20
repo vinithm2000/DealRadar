@@ -121,8 +121,6 @@ async def category_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     
     try:
-        await query.answer()
-        
         user_id = query.from_user.id
         selected = query.data.replace("cat_", "")
         
@@ -151,23 +149,32 @@ async def category_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             new_cats = current_cats if current_cats else ['all']
         
         update_user_categories(user_id, ','.join(new_cats))
+        cats_display = ', '.join(c.capitalize() for c in new_cats)
         logger.info(f"Category updated: user={user_id}, new_cats={new_cats}")
         
-        # Rebuild keyboard
+        # Show popup toast so user knows it worked
+        await query.answer(text=f"✅ Updated to: {cats_display}", show_alert=False)
+        
+        # Rebuild keyboard with updated checkmarks
         reply_markup = _build_category_keyboard(new_cats)
-        cats_display = ', '.join(c.capitalize() for c in new_cats)
+        
+        # Build list of selected categories with emojis
+        selected_display = ""
+        for c in new_cats:
+            emoji = CATEGORY_EMOJIS.get(c, '📦')
+            selected_display += f"\n   {emoji} {c.capitalize()}"
         
         await query.edit_message_text(
-            f"📂 <b>Choose your deal categories</b>\n\n"
-            f"Tap to toggle. Current: <b>{cats_display}</b>\n"
-            f"Choose 'All Deals' to get everything.",
+            f"📂 <b>Your Deal Preferences</b>\n\n"
+            f"🔔 You'll receive:{selected_display}\n\n"
+            f"Tap buttons below to change:",
             parse_mode='HTML',
             reply_markup=reply_markup
         )
     except Exception as e:
         logger.error(f"Category callback error: {e}", exc_info=True)
         try:
-            await query.answer(text="Something went wrong. Try /categories again.", show_alert=True)
+            await query.answer(text=f"❌ Error: {str(e)[:100]}", show_alert=True)
         except:
             pass
 
