@@ -10,7 +10,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-# Create volume for persistent data
-VOLUME ["/app/data"]
+# Create directory for persistent data (Railway volumes should be mounted here)
+RUN mkdir -p /app/data
 
 CMD ["python", "main.py"]
