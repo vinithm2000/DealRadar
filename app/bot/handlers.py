@@ -1,3 +1,4 @@
+from telegram.ext import Application, CommandHandler
 from .commands import start, deals_command, topdeal, admin_stats
 
 def register_handlers(app: Application):
