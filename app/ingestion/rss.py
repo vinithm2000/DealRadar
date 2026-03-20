@@ -26,11 +26,18 @@ def fetch_rss_deals():
                 continue
                 
             for entry in feed.entries:
+                # Convert struct_time to UNIX timestamp
+                ts = entry.get("published_parsed")
+                unix_ts = None
+                if ts:
+                    import time
+                    unix_ts = time.mktime(ts)
+
                 all_deals.append({
                     "title": getattr(entry, 'title', 'No Title'),
                     "url": getattr(entry, 'link', ''),
                     "source": f"rss_{name}",
-                    "timestamp": entry.get("published_parsed")
+                    "timestamp": unix_ts
                 })
             
             logger.info(f"Fetched {len(feed.entries)} deals from {name}")

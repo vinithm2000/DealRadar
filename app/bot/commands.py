@@ -95,3 +95,19 @@ async def fetch_deals(update: Update, context: ContextTypes.DEFAULT_TYPE):
     run_deal_pipeline() 
     
     await update.message.reply_text("✅ Fetch completed! Check /admin or /deals for results.")
+
+async def share_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """
+    Handles /share command - helps users invite others
+    """
+    bot_username = context.bot.username
+    share_url = f"https://t.me/share/url?url=https://t.me/{bot_username}&text=Check out this amazing Deals Bot for tech offers in India! 🚀"
+    
+    from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+    keyboard = [[InlineKeyboardButton("📱 Share with Friends", url=share_url)]]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    
+    await update.message.reply_text(
+        "Love using DealRadar? Share it with your friends and help them save money too! 💰",
+        reply_markup=reply_markup
+    )

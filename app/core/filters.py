@@ -11,21 +11,35 @@ KEYWORDS = [
 # Blacklisted keywords
 BLACKLIST = ["refurbished", "pre-owned", "used", "fake", "replica"]
 
+# Minimum recency (48 hours)
+MAX_AGE_HOURS = 48
+
 def is_valid_deal(deal):
     """
-    Checks if a deal is relevant based on keywords and blacklist
+    Checks if a deal passes keyword and blacklist filters
     """
     title = deal["title"].lower()
     
-    # Check blacklist
-    if any(k in title for k in BLACKLIST):
-        logger.debug(f"Deal blacklisted: {deal['title']}")
+    # 1. Blacklist check
+    for b in BLACKLIST:
+        if b in title:
+            return False
+            
+    # 2. Keyword check
+    found_keyword = False
+    for k in KEYWORDS:
+        if k in title:
+            found_keyword = True
+            break
+            
+    if not found_keyword:
         return False
-        
-    # Check if any interest keyword matches
-    has_keyword = any(k in title for k in KEYWORDS)
-    
-    if not has_keyword:
-        logger.debug(f"Deal filtered out (no keywords): {deal['title']}")
-        
-    return has_keyword
+
+    # 3. Recency check
+    import time
+    if deal.get("timestamp"):
+        age_seconds = time.time() - deal["timestamp"]
+        if age_seconds > (MAX_AGE_HOURS * 3600):
+            return False
+            
+    return True
