@@ -217,6 +217,18 @@ def purge_old_deals():
     if deleted > 0:
         logger.info(f"Purged {deleted} old deals from database")
 
+def clear_all_deals():
+    """Clear ALL deals from database (admin command)"""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT COUNT(*) FROM deals")
+    count = cursor.fetchone()[0]
+    cursor.execute("DELETE FROM deals")
+    conn.commit()
+    conn.close()
+    logger.info(f"Cleared all {count} deals from database")
+    return count
+
 def get_stats():
     conn = get_connection()
     cursor = conn.cursor()

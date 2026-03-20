@@ -9,6 +9,26 @@ CATEGORY_EMOJIS = {
     'home': '🏠', 'general': '📦', 'all': '🌐'
 }
 
+def _build_category_keyboard(current_cats):
+    """Build an inline keyboard for category selection"""
+    buttons = []
+    
+    all_check = "✅" if 'all' in current_cats else "⬜"
+    buttons.append([InlineKeyboardButton(f"{all_check} 🌐 All Deals", callback_data="cat_all")])
+    
+    row = []
+    for cat in AVAILABLE_CATEGORIES:
+        emoji = CATEGORY_EMOJIS.get(cat, '📦')
+        check = "✅" if cat in current_cats else "⬜"
+        row.append(InlineKeyboardButton(f"{check} {emoji} {cat.capitalize()}", callback_data=f"cat_{cat}"))
+        if len(row) == 2:
+            buttons.append(row)
+            row = []
+    if row:
+        buttons.append(row)
+    
+    return InlineKeyboardMarkup(buttons)
+
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handles /start command"""
     from app.db.database import save_user
@@ -75,97 +95,81 @@ async def topdeal(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def categories_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handles /categories command - lets users pick deal categories"""
-    from app.db.database import get_user_categories
+    from app.db.database import get_user_categories, save_user
     
     user_id = update.effective_user.id
+    # Ensure user exists in DB
+    save_user(user_id)
+    
     current_cats = get_user_categories(user_id)
+    reply_markup = _build_category_keyboard(current_cats)
     
-    # Build inline keyboard
-    buttons = []
-    
-    # "All" button
-    all_check = "✅" if 'all' in current_cats else "⬜"
-    buttons.append([InlineKeyboardButton(f"{all_check} 🌐 All Deals", callback_data="cat_all")])
-    
-    # Category buttons (2 per row)
-    row = []
-    for cat in AVAILABLE_CATEGORIES:
-        emoji = CATEGORY_EMOJIS.get(cat, '📦')
-        check = "✅" if cat in current_cats else "⬜"
-        row.append(InlineKeyboardButton(f"{check} {emoji} {cat.capitalize()}", callback_data=f"cat_{cat}"))
-        if len(row) == 2:
-            buttons.append(row)
-            row = []
-    if row:
-        buttons.append(row)
-    
-    reply_markup = InlineKeyboardMarkup(buttons)
+    cats_display = ', '.join(c.capitalize() for c in current_cats)
     
     await update.message.reply_text(
-        "📂 <b>Choose your deal categories</b>\n\n"
-        "Tap to toggle. You'll only receive deals matching your selections.\n"
-        "Choose 'All Deals' to get everything.",
+        f"📂 <b>Choose your deal categories</b>\n\n"
+        f"Tap to toggle. Current: <b>{cats_display}</b>\n"
+        f"Choose 'All Deals' to get everything.",
         parse_mode='HTML',
         reply_markup=reply_markup
     )
 
 async def category_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handles category button presses"""
-    from app.db.database import get_user_categories, update_user_categories
+    from app.db.database import get_user_categories, update_user_categories, save_user
     
     query = update.callback_query
-    await query.answer()
     
-    user_id = query.from_user.id
-    selected = query.data.replace("cat_", "")
-    
-    current_cats = get_user_categories(user_id)
-    
-    if selected == "all":
-        # Toggle "all"
-        if 'all' in current_cats:
-            new_cats = ['electronics']  # Default if deselecting all
-        else:
-            new_cats = ['all']
-    else:
-        # Remove "all" if it was selected
-        if 'all' in current_cats:
-            current_cats = []
+    try:
+        await query.answer()
         
-        # Toggle the selected category
-        if selected in current_cats:
-            current_cats.remove(selected)
-        else:
-            current_cats.append(selected)
+        user_id = query.from_user.id
+        selected = query.data.replace("cat_", "")
         
-        new_cats = current_cats if current_cats else ['all']
-    
-    update_user_categories(user_id, ','.join(new_cats))
-    
-    # Rebuild keyboard with updated state
-    buttons = []
-    all_check = "✅" if 'all' in new_cats else "⬜"
-    buttons.append([InlineKeyboardButton(f"{all_check} 🌐 All Deals", callback_data="cat_all")])
-    
-    row = []
-    for cat in AVAILABLE_CATEGORIES:
-        emoji = CATEGORY_EMOJIS.get(cat, '📦')
-        check = "✅" if cat in new_cats else "⬜"
-        row.append(InlineKeyboardButton(f"{check} {emoji} {cat.capitalize()}", callback_data=f"cat_{cat}"))
-        if len(row) == 2:
-            buttons.append(row)
-            row = []
-    if row:
-        buttons.append(row)
-    
-    reply_markup = InlineKeyboardMarkup(buttons)
-    
-    await query.edit_message_text(
-        f"📂 <b>Choose your deal categories</b>\n\n"
-        f"Tap to toggle. Current: <b>{', '.join(c.capitalize() for c in new_cats)}</b>",
-        parse_mode='HTML',
-        reply_markup=reply_markup
-    )
+        # Ensure user exists
+        save_user(user_id)
+        
+        current_cats = get_user_categories(user_id)
+        logger.info(f"Category toggle: user={user_id}, selected={selected}, current={current_cats}")
+        
+        if selected == "all":
+            if 'all' in current_cats:
+                new_cats = ['electronics']
+            else:
+                new_cats = ['all']
+        else:
+            # Remove "all" if switching to specific
+            if 'all' in current_cats:
+                current_cats = []
+            
+            # Toggle
+            if selected in current_cats:
+                current_cats.remove(selected)
+            else:
+                current_cats.append(selected)
+            
+            new_cats = current_cats if current_cats else ['all']
+        
+        update_user_categories(user_id, ','.join(new_cats))
+        logger.info(f"Category updated: user={user_id}, new_cats={new_cats}")
+        
+        # Rebuild keyboard
+        reply_markup = _build_category_keyboard(new_cats)
+        cats_display = ', '.join(c.capitalize() for c in new_cats)
+        
+        await query.edit_message_text(
+            f"📂 <b>Choose your deal categories</b>\n\n"
+            f"Tap to toggle. Current: <b>{cats_display}</b>\n"
+            f"Choose 'All Deals' to get everything.",
+            parse_mode='HTML',
+            reply_markup=reply_markup
+        )
+    except Exception as e:
+        logger.error(f"Category callback error: {e}", exc_info=True)
+        try:
+            await query.answer(text="Something went wrong. Try /categories again.", show_alert=True)
+        except:
+            pass
 
 async def admin_stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handles /admin command"""
@@ -211,6 +215,19 @@ async def fetch_deals(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"🆕 Recent deals in DB: {stats['recent_deals']}\n"
         f"Use /deals to see top picks."
     )
+
+async def cleardeals_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handles /cleardeals command - clears ALL deals from DB (Admin only)"""
+    from app.utils.config import config
+    from app.db.database import clear_all_deals
+    
+    user_id = update.effective_user.id
+    if config.ADMIN_ID and str(user_id) != str(config.ADMIN_ID):
+        await update.message.reply_text("Unauthorized.")
+        return
+    
+    count = clear_all_deals()
+    await update.message.reply_text(f"🗑️ Cleared {count} deals from database. Run /fetch to get fresh ones.")
 
 async def share_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handles /share command - helps users invite others"""
