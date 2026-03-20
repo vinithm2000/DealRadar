@@ -73,6 +73,7 @@ async def admin_stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "📊 <b>Bot Statistics</b>\n\n"
         f"👥 Total Users: {stats['users']}\n"
         f"📦 Total Deals: {stats['total_deals']}\n"
+        f"🆕 Recent (48h): {stats['recent_deals']}\n"
         f"✅ Posted Deals: {stats['posted_deals']}\n"
     )
     await update.message.reply_html(message)
@@ -91,10 +92,20 @@ async def fetch_deals(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
     await update.message.reply_text("⚡ Starting manual deal fetch... please wait.")
     
+    # Purge old deals first
+    from app.db.database import purge_old_deals
+    purge_old_deals()
+    
     # Run pipeline
     run_deal_pipeline() 
     
-    await update.message.reply_text("✅ Fetch completed! Check /admin or /deals for results.")
+    from app.db.database import get_stats
+    stats = get_stats()
+    await update.message.reply_text(
+        f"✅ Fetch completed!\n"
+        f"🆕 Recent deals in DB: {stats['recent_deals']}\n"
+        f"Use /deals to see top picks."
+    )
 
 async def share_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """

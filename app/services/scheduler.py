@@ -12,6 +12,10 @@ def run_deal_pipeline(app=None):
     try:
         logger.info("Pipeline: Starting scheduled job")
         
+        # Purge old deals first
+        from app.db.database import purge_old_deals
+        purge_old_deals()
+        
         # 1. Ingest
         raw_deals = aggregate_all_sources()
         
