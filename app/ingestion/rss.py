@@ -1,21 +1,66 @@
 import feedparser
 import time
+import requests
+from bs4 import BeautifulSoup
 from app.utils.logger import logger
 
-# Verified, working RSS/Atom feeds for Indian deals
+# RSS/Atom feeds - focused on sources that link to actual merchant pages
 FEEDS = {
-    "desidime": "https://www.desidime.com/deals.atom",
-    "desidime_disc": "https://www.desidime.com/discussions.atom",
-    "mashable_deals": "https://mashable.com/feeds/channel/deals",
+    "desidime_deals": "https://www.desidime.com/deals.atom",
     "smartprix": "https://www.smartprix.com/bytes/feed/",
     "91mobiles": "https://www.91mobiles.com/hub/feed/",
-    "digit": "https://www.digit.in/digit-deals/feed",
+    "digit_deals": "https://www.digit.in/digit-deals/feed",
     "indianexpress_tech": "https://indianexpress.com/section/technology/feed/",
+    "gadgets360": "https://feeds.feedburner.com/gadgets360-latest",
 }
+
+# Amazon India deal pages to scrape
+AMAZON_DEAL_PAGES = [
+    "https://www.amazon.in/gp/goldbox",
+    "https://www.amazon.in/deals",
+]
+
+def _try_extract_merchant_url(desidime_url):
+    """
+    Try to extract the actual merchant URL from a DesiDime deal page.
+    DesiDime pages contain redirect links to Amazon, Flipkart, etc.
+    """
+    try:
+        headers = {"User-Agent": "DealRadarBot/2.0"}
+        resp = requests.get(desidime_url, headers=headers, timeout=10)
+        if resp.status_code != 200:
+            return None
+        
+        soup = BeautifulSoup(resp.text, 'html.parser')
+        
+        # Look for "Get Deal" or "Buy Now" links
+        for link in soup.find_all('a', href=True):
+            href = link.get('href', '')
+            text = link.get_text(strip=True).lower()
+            
+            # Check if link goes to a merchant
+            merchants = ['amazon.in', 'flipkart.com', 'myntra.com', 'ajio.com', 
+                        'meesho.com', 'nykaa.com', 'croma.com', 'jiomart.com']
+            for m in merchants:
+                if m in href and ('deal' in text or 'buy' in text or 'get' in text or 'shop' in text or 'go to' in text):
+                    return href
+        
+        # Also check for redirect links in common DesiDime format
+        for link in soup.find_all('a', href=True):
+            href = link.get('href', '')
+            for m in ['amazon.in', 'flipkart.com', 'myntra.com']:
+                if m in href:
+                    return href
+                    
+    except Exception as e:
+        logger.debug(f"Could not extract merchant URL from {desidime_url}: {e}")
+    
+    return None
 
 def fetch_rss_deals():
     """
-    Fetches deals from verified RSS/Atom feeds
+    Fetches deals from RSS/Atom feeds.
+    For DesiDime, tries to extract actual merchant URLs.
     """
     all_deals = []
     now = time.time()
@@ -28,7 +73,8 @@ def fetch_rss_deals():
             if not feed.entries:
                 logger.info(f"No entries found for RSS feed '{name}'")
                 continue
-                
+            
+            count = 0
             for entry in feed.entries:
                 title = getattr(entry, 'title', 'No Title')
                 link = getattr(entry, 'link', '')
@@ -47,22 +93,30 @@ def fetch_rss_deals():
                             pass
                         break
                 
-                # Skip if no timestamp or older than 48 hours
                 if unix_ts is None:
-                    unix_ts = now  # Assume current if no date
+                    unix_ts = now
                 
                 age_hours = (now - unix_ts) / 3600
                 if age_hours > 48:
                     continue
                 
+                # For DesiDime, try to get the actual merchant URL
+                final_url = link
+                if 'desidime' in name:
+                    merchant_url = _try_extract_merchant_url(link)
+                    if merchant_url:
+                        final_url = merchant_url
+                        logger.info(f"Extracted merchant URL from DesiDime: {merchant_url[:60]}")
+                
                 all_deals.append({
                     "title": title,
-                    "url": link,
+                    "url": final_url,
                     "source": f"rss_{name}",
                     "timestamp": unix_ts
                 })
+                count += 1
             
-            logger.info(f"Fetched {len(feed.entries)} entries from {name}, kept recent ones")
+            logger.info(f"Kept {count} recent deals from {name}")
         except Exception as e:
             logger.error(f"Error fetching RSS deals from {name}: {e}")
             
