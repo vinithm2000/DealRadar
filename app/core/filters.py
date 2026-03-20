@@ -4,7 +4,8 @@ from app.utils.logger import logger
 KEYWORDS = [
     "mobile", "laptop", "earbuds", "tv", "ssd", "ram", "gpu", 
     "monitor", "keyboard", "mouse", "smartphone", "iphone", 
-    "samsung", "oneplus", "asus", "dell", "hp", "lenovo"
+    "samsung", "oneplus", "asus", "dell", "hp", "lenovo",
+    "amazon", "flipkart", "deal", "offer", "sale", "price", "off"
 ]
 
 # Blacklisted keywords
