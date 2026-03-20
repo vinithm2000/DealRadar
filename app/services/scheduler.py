@@ -29,8 +29,14 @@ def run_deal_pipeline(app=None):
         if app:
             import asyncio
             from .notifier import broadcast_new_deals
-            # Run broadcast in the background
-            asyncio.run_coroutine_threadsafe(broadcast_new_deals(app), asyncio.get_event_loop())
+            
+            # Use the loop from the application if available
+            try:
+                loop = app.loop
+            except AttributeError:
+                loop = asyncio.get_event_loop()
+                
+            asyncio.run_coroutine_threadsafe(broadcast_new_deals(app), loop)
 
     except Exception as e:
         logger.error(f"Pipeline: Error during execution: {e}")
