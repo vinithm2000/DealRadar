@@ -35,11 +35,6 @@ def init_db():
     )
     """)
     
-    # Index for fast URL dedup lookups
-    cursor.execute("CREATE INDEX IF NOT EXISTS idx_url_hash ON deals(url_hash)")
-    # Index for fast "unposted" queries
-    cursor.execute("CREATE INDEX IF NOT EXISTS idx_posted ON deals(posted, created_at)")
-
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS users (
         user_id INTEGER PRIMARY KEY,
