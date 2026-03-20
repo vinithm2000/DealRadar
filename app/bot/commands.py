@@ -76,3 +76,22 @@ async def admin_stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"✅ Posted Deals: {stats['posted_deals']}\n"
     )
     await update.message.reply_html(message)
+
+async def fetch_deals(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """
+    Handles /fetch command - manually triggers the pipeline (Admin only)
+    """
+    from app.utils.config import config
+    from app.services.scheduler import run_deal_pipeline
+    
+    user_id = update.effective_user.id
+    if config.ADMIN_ID and str(user_id) != str(config.ADMIN_ID):
+        await update.message.reply_text("Unauthorized.")
+        return
+        
+    await update.message.reply_text("⚡ Starting manual deal fetch... please wait.")
+    
+    # Run pipeline
+    run_deal_pipeline() 
+    
+    await update.message.reply_text("✅ Fetch completed! Check /admin or /deals for results.")
