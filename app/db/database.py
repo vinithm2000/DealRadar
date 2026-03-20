@@ -161,20 +161,34 @@ def update_user_categories(user_id: int, categories: str):
     """Update a user's category preferences"""
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("UPDATE users SET categories = ? WHERE user_id = ?", (categories, user_id))
-    conn.commit()
-    conn.close()
+    try:
+        cursor.execute("UPDATE users SET categories = ? WHERE user_id = ?", (categories, user_id))
+        if cursor.rowcount == 0:
+            # User doesn't exist yet, insert them
+            cursor.execute("INSERT OR IGNORE INTO users (user_id, categories, created_at) VALUES (?, ?, ?)", 
+                           (user_id, categories, int(time.time())))
+        conn.commit()
+        logger.info(f"Updated categories for user {user_id}: {categories}")
+    except Exception as e:
+        logger.error(f"Error updating categories for user {user_id}: {e}")
+    finally:
+        conn.close()
 
 def get_user_categories(user_id: int):
     """Get a user's subscribed categories"""
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT categories FROM users WHERE user_id = ?", (user_id,))
-    row = cursor.fetchone()
-    conn.close()
-    if row and row[0]:
-        return row[0].split(',')
-    return ['all']
+    try:
+        cursor.execute("SELECT categories FROM users WHERE user_id = ?", (user_id,))
+        row = cursor.fetchone()
+        if row and row[0] and row[0].strip():
+            return row[0].strip().split(',')
+        return ['all']
+    except Exception as e:
+        logger.error(f"Error getting categories for user {user_id}: {e}")
+        return ['all']
+    finally:
+        conn.close()
 
 def get_latest_deals(limit=10, only_unposted=False):
     conn = get_connection()
