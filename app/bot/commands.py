@@ -201,70 +201,93 @@ async def admin_stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def fetch_deals(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handles /fetch command - manually triggers the pipeline with diagnostics"""
     from app.utils.config import config
+    import asyncio
+    import concurrent.futures
     
     user_id = update.effective_user.id
     if config.ADMIN_ID and str(user_id) != str(config.ADMIN_ID):
         await update.message.reply_text("Unauthorized.")
         return
         
-    await update.message.reply_text("⚡ Starting manual deal fetch... please wait (this may take 30-60 seconds).")
+    await update.message.reply_text("⚡ Starting manual deal fetch... please wait (30-60 seconds).")
     
     try:
-        # Step 1: Ingest
-        from app.ingestion.aggregator import aggregate_all_sources
-        raw_deals = aggregate_all_sources()
+        # Run the blocking pipeline in a thread executor to avoid asyncio conflicts
+        loop = asyncio.get_event_loop()
+        result = await loop.run_in_executor(None, _run_pipeline_sync)
         
-        source_counts = {}
-        for d in raw_deals:
-            src = d.get('source', 'unknown')
-            source_counts[src] = source_counts.get(src, 0) + 1
-        
-        source_info = "\n".join(f"  • {k}: {v}" for k, v in sorted(source_counts.items()))
+        # Send results
         await update.message.reply_text(
-            f"📡 Fetched {len(raw_deals)} raw deals:\n{source_info}"
+            f"📡 Fetched {result['raw_count']} raw deals:\n{result['source_info']}"
         )
-        
-        # Step 2: Process
-        from app.core.processor import process_raw_deals
-        processed = process_raw_deals(raw_deals)
-        
-        # Step 3: Save with affiliate links
-        from app.db.database import save_deal, purge_old_deals
-        from app.services.affiliate import generate_affiliate_link
-        
-        purge_old_deals()
-        
-        saved = 0
-        affiliate_count = 0
-        for d in processed:
-            aff_url = generate_affiliate_link(d['url'])
-            d['affiliate_url'] = aff_url
-            if aff_url and aff_url != d['url']:
-                affiliate_count += 1
-            if save_deal(d):
-                saved += 1
-        
-        from app.db.database import get_stats
-        stats = get_stats()
-        
-        # Show top 3 deal URLs for debugging
-        sample = ""
-        for d in processed[:3]:
-            aff = "✅ EarnKaro" if d.get('affiliate_url') and d['affiliate_url'] != d['url'] else "❌ No affiliate"
-            sample += f"\n• [{d['source']}] {aff}\n  {d['url'][:60]}..."
         
         await update.message.reply_text(
             f"✅ Fetch completed!\n\n"
             f"📊 Results:\n"
-            f"  • Raw deals: {len(raw_deals)}\n"
-            f"  • After filters: {len(processed)}\n"
-            f"  • New saved: {saved}\n"
-            f"  • With EarnKaro: {affiliate_count}\n"
-            f"  • Total in DB: {stats['recent_deals']}\n\n"
-            f"🔗 Sample deals:{sample}"
+            f"  • Raw deals: {result['raw_count']}\n"
+            f"  • After filters: {result['processed_count']}\n"
+            f"  • New saved: {result['saved']}\n"
+            f"  • With EarnKaro: {result['affiliate_count']}\n"
+            f"  • Total in DB: {result['total_in_db']}\n\n"
+            f"🔗 Sample deals:{result['sample']}"
         )
     except Exception as e:
+        logger.error(f"Fetch error: {e}", exc_info=True)
         await update.message.reply_text(f"❌ Fetch error: {str(e)[:300]}")
+
+def _run_pipeline_sync():
+    """
+    Runs the deal pipeline synchronously (called from thread executor).
+    Returns a dict with diagnostic results.
+    """
+    from app.ingestion.aggregator import aggregate_all_sources
+    from app.core.processor import process_raw_deals
+    from app.db.database import save_deal, purge_old_deals, get_stats
+    from app.services.affiliate import generate_affiliate_link
+    
+    # Step 1: Ingest
+    raw_deals = aggregate_all_sources()
+    
+    source_counts = {}
+    for d in raw_deals:
+        src = d.get('source', 'unknown')
+        source_counts[src] = source_counts.get(src, 0) + 1
+    
+    source_info = "\n".join(f"  • {k}: {v}" for k, v in sorted(source_counts.items()))
+    
+    # Step 2: Process
+    processed = process_raw_deals(raw_deals)
+    
+    # Step 3: Save with affiliate links
+    purge_old_deals()
+    
+    saved = 0
+    affiliate_count = 0
+    for d in processed:
+        aff_url = generate_affiliate_link(d['url'])
+        d['affiliate_url'] = aff_url
+        if aff_url and aff_url != d['url']:
+            affiliate_count += 1
+        if save_deal(d):
+            saved += 1
+    
+    stats = get_stats()
+    
+    # Show top 3 deal URLs for debugging
+    sample = ""
+    for d in processed[:3]:
+        aff = "✅ EarnKaro" if d.get('affiliate_url') and d['affiliate_url'] != d['url'] else "❌ No affiliate"
+        sample += f"\n• [{d['source']}] {aff}\n  {d['url'][:60]}..."
+    
+    return {
+        'raw_count': len(raw_deals),
+        'source_info': source_info,
+        'processed_count': len(processed),
+        'saved': saved,
+        'affiliate_count': affiliate_count,
+        'total_in_db': stats['recent_deals'],
+        'sample': sample,
+    }
 
 
 async def cleardeals_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
