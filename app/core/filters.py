@@ -57,19 +57,23 @@ def is_valid_deal(deal):
         if b in combined:
             return False
     
-    # 2. Keyword check - check title AND url
+    # 2. Auto-pass merchant sources (they're guaranteed real products)
+    source = deal.get("source", "").lower()
+    if any(s in source for s in ["amazon", "flipkart", "desidime", "deal", "loot", "offer", "merchant"]):
+        # Still check recency
+        if deal.get("timestamp"):
+            age_seconds = time.time() - deal["timestamp"]
+            if age_seconds > (MAX_AGE_HOURS * 3600):
+                return False
+        return True
+    
+    # 3. Keyword check for other sources - check title AND url
     for k in KEYWORDS:
         if k in combined:
-            # 3. Recency check  
             if deal.get("timestamp"):
                 age_seconds = time.time() - deal["timestamp"]
                 if age_seconds > (MAX_AGE_HOURS * 3600):
                     return False
             return True
-    
-    # If no keywords matched, still allow if it's from a deal source
-    source = deal.get("source", "").lower()
-    if any(s in source for s in ["desidime", "deal", "loot", "offer"]):
-        return True
     
     return False

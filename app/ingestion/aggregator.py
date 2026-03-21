@@ -7,23 +7,32 @@ def aggregate_all_sources():
     """
     all_deals = []
     
-    # Reddit
+    # 1. Direct merchant deals (Amazon, Flipkart) - these get EarnKaro links
+    try:
+        from .merchants import fetch_merchant_deals
+        merchant_deals = fetch_merchant_deals()
+        all_deals.extend(merchant_deals)
+        logger.info(f"Aggregator: {len(merchant_deals)} deals from merchant scrapers")
+    except Exception as e:
+        logger.error(f"Aggregator: Merchant scraper failed: {e}", exc_info=True)
+    
+    # 2. Reddit deals
     try:
         from .reddit import fetch_reddit_deals
         reddit_deals = fetch_reddit_deals()
         all_deals.extend(reddit_deals)
         logger.info(f"Aggregator: {len(reddit_deals)} deals from Reddit")
     except Exception as e:
-        logger.error(f"Aggregator: Reddit source failed: {e}")
+        logger.error(f"Aggregator: Reddit source failed: {e}", exc_info=True)
     
-    # RSS feeds
+    # 3. RSS/Atom feeds  
     try:
         from .rss import fetch_rss_deals
         rss_deals = fetch_rss_deals()
         all_deals.extend(rss_deals)
         logger.info(f"Aggregator: {len(rss_deals)} deals from RSS")
     except Exception as e:
-        logger.error(f"Aggregator: RSS source failed: {e}")
+        logger.error(f"Aggregator: RSS source failed: {e}", exc_info=True)
     
     logger.info(f"Aggregator: Total {len(all_deals)} deals from all sources")
     return all_deals
