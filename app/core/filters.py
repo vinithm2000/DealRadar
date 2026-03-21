@@ -1,45 +1,75 @@
 from app.utils.logger import logger
+import time
 
-# Keywords for India-specific tech niche
+# Extremely broad keywords - we want to catch ALL deals
+# Any deal mentioning a product, discount, or merchant passes
 KEYWORDS = [
+    # Discount indicators
+    "off", "deal", "offer", "sale", "price", "discount", "coupon", 
+    "lowest", "cheapest", "free", "cashback", "flat", "save", "loot",
+    "steal", "hurry", "limited", "flash", "bumper", "mega",
+    # Price indicators  
+    "₹", "rs", "rs.", "inr", "rupee", "%",
+    # Merchants
+    "amazon", "flipkart", "myntra", "ajio", "meesho", "croma",
+    "nykaa", "jiomart", "tatacliq", "snapdeal", "reliancedigital",
+    # Electronics
     "mobile", "laptop", "earbuds", "tv", "ssd", "ram", "gpu", 
     "monitor", "keyboard", "mouse", "smartphone", "iphone", 
     "samsung", "oneplus", "asus", "dell", "hp", "lenovo",
-    "amazon", "flipkart", "deal", "offer", "sale", "price", "off"
+    "ipad", "macbook", "tablet", "headphone", "speaker", "smartwatch",
+    "charger", "power bank", "camera", "printer", "router",
+    "pixel", "redmi", "realme", "nothing", "motorola", "vivo", "oppo",
+    "nintendo", "playstation", "xbox", "gaming",
+    # Fashion
+    "shoes", "clothing", "fashion", "dress", "sneakers", "watch",
+    "bag", "wallet", "perfume", 
+    # Home
+    "furniture", "kitchen", "appliance", "ac", "refrigerator",
+    "washing machine", "microwave", "purifier", "mattress",
+    # Food
+    "zomato", "swiggy", "food", "grocery", "blinkit", "bigbasket",
+    # Generic product terms
+    "buy", "best", "review", "compare", "specs", "launch", "new",
+    "top", "under", "budget",
 ]
 
-# Blacklisted keywords
-BLACKLIST = ["refurbished", "pre-owned", "used", "fake", "replica"]
+# Blacklisted keywords - only truly spam content
+BLACKLIST = [
+    "refurbished", "pre-owned", "fake", "replica", "mod apk",
+    "hack", "crack", "pirate", "torrent", "survey",
+]
 
-# Minimum recency (48 hours)
-MAX_AGE_HOURS = 48
+# Maximum deal age
+MAX_AGE_HOURS = 72  # Increased to 72 hours
 
 def is_valid_deal(deal):
     """
-    Checks if a deal passes keyword and blacklist filters
+    Checks if a deal passes keyword and blacklist filters.
+    Very permissive - we want maximum deals.
     """
-    title = deal["title"].lower()
+    title = deal.get("title", "").lower()
+    url = deal.get("url", "").lower()
+    combined = title + " " + url
     
     # 1. Blacklist check
     for b in BLACKLIST:
-        if b in title:
+        if b in combined:
             return False
-            
-    # 2. Keyword check
-    found_keyword = False
+    
+    # 2. Keyword check - check title AND url
     for k in KEYWORDS:
-        if k in title:
-            found_keyword = True
-            break
-            
-    if not found_keyword:
-        return False
-
-    # 3. Recency check
-    import time
-    if deal.get("timestamp"):
-        age_seconds = time.time() - deal["timestamp"]
-        if age_seconds > (MAX_AGE_HOURS * 3600):
-            return False
-            
-    return True
+        if k in combined:
+            # 3. Recency check  
+            if deal.get("timestamp"):
+                age_seconds = time.time() - deal["timestamp"]
+                if age_seconds > (MAX_AGE_HOURS * 3600):
+                    return False
+            return True
+    
+    # If no keywords matched, still allow if it's from a deal source
+    source = deal.get("source", "").lower()
+    if any(s in source for s in ["desidime", "deal", "loot", "offer"]):
+        return True
+    
+    return False

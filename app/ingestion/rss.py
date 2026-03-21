@@ -1,124 +1,97 @@
 import feedparser
 import time
 import requests
-from bs4 import BeautifulSoup
 from app.utils.logger import logger
 
-# RSS/Atom feeds - focused on sources that link to actual merchant pages
+# RSS/Atom feeds that actually produce deal content
 FEEDS = {
     "desidime_deals": "https://www.desidime.com/deals.atom",
+    "desidime_disc": "https://www.desidime.com/discussions.atom",
+    "gadgets360": "https://feeds.feedburner.com/gadgets360-latest",
     "smartprix": "https://www.smartprix.com/bytes/feed/",
     "91mobiles": "https://www.91mobiles.com/hub/feed/",
-    "digit_deals": "https://www.digit.in/digit-deals/feed",
     "indianexpress_tech": "https://indianexpress.com/section/technology/feed/",
-    "gadgets360": "https://feeds.feedburner.com/gadgets360-latest",
+    "digit_deals": "https://www.digit.in/digit-deals/feed",
+    "fonearena": "https://www.fonearena.com/blog/feed",
+    "techpp": "https://techpp.com/feed/",
 }
 
-# Amazon India deal pages to scrape
-AMAZON_DEAL_PAGES = [
-    "https://www.amazon.in/gp/goldbox",
-    "https://www.amazon.in/deals",
+# Direct deal aggregator APIs / pages
+DEAL_APIS = [
+    {
+        "name": "amazon_deals",
+        "url": "https://www.amazon.in/gp/rss/bestsellers",
+        "type": "rss"
+    },
 ]
 
-def _try_extract_merchant_url(desidime_url):
-    """
-    Try to extract the actual merchant URL from a DesiDime deal page.
-    DesiDime pages contain redirect links to Amazon, Flipkart, etc.
-    """
+def _fetch_single_feed(name, url, now):
+    """Fetch deals from a single RSS/Atom feed"""
+    deals = []
     try:
-        headers = {"User-Agent": "DealRadarBot/2.0"}
-        resp = requests.get(desidime_url, headers=headers, timeout=10)
-        if resp.status_code != 200:
-            return None
+        logger.info(f"RSS: Fetching {name}")
+        feed = feedparser.parse(url)
         
-        soup = BeautifulSoup(resp.text, 'html.parser')
+        if not feed.entries:
+            logger.info(f"RSS: No entries from {name}")
+            return deals
         
-        # Look for "Get Deal" or "Buy Now" links
-        for link in soup.find_all('a', href=True):
-            href = link.get('href', '')
-            text = link.get_text(strip=True).lower()
+        for entry in feed.entries:
+            title = getattr(entry, 'title', '')
+            link = getattr(entry, 'link', '')
             
-            # Check if link goes to a merchant
-            merchants = ['amazon.in', 'flipkart.com', 'myntra.com', 'ajio.com', 
-                        'meesho.com', 'nykaa.com', 'croma.com', 'jiomart.com']
-            for m in merchants:
-                if m in href and ('deal' in text or 'buy' in text or 'get' in text or 'shop' in text or 'go to' in text):
-                    return href
+            if not title or not link:
+                continue
+
+            # Parse timestamp
+            unix_ts = None
+            for ts_field in ['published_parsed', 'updated_parsed']:
+                ts = entry.get(ts_field)
+                if ts:
+                    try:
+                        unix_ts = time.mktime(ts)
+                    except (OverflowError, ValueError):
+                        pass
+                    break
+            
+            if unix_ts is None:
+                unix_ts = now
+            
+            # Skip very old content
+            age_hours = (now - unix_ts) / 3600
+            if age_hours > 72:
+                continue
+            
+            deals.append({
+                "title": title,
+                "url": link,
+                "source": f"rss_{name}",
+                "timestamp": unix_ts
+            })
         
-        # Also check for redirect links in common DesiDime format
-        for link in soup.find_all('a', href=True):
-            href = link.get('href', '')
-            for m in ['amazon.in', 'flipkart.com', 'myntra.com']:
-                if m in href:
-                    return href
-                    
+        logger.info(f"RSS: Got {len(deals)} recent entries from {name}")
     except Exception as e:
-        logger.debug(f"Could not extract merchant URL from {desidime_url}: {e}")
+        logger.error(f"RSS: Error fetching {name}: {e}")
     
-    return None
+    return deals
 
 def fetch_rss_deals():
     """
-    Fetches deals from RSS/Atom feeds.
-    For DesiDime, tries to extract actual merchant URLs.
+    Fetches deals from all RSS/Atom feeds.
+    No more DesiDime scraping - too slow and unreliable.
     """
     all_deals = []
     now = time.time()
     
+    # Fetch from RSS feeds
     for name, url in FEEDS.items():
-        try:
-            logger.info(f"Fetching deals from RSS ({name})")
-            feed = feedparser.parse(url)
-            
-            if not feed.entries:
-                logger.info(f"No entries found for RSS feed '{name}'")
-                continue
-            
-            count = 0
-            for entry in feed.entries:
-                title = getattr(entry, 'title', 'No Title')
-                link = getattr(entry, 'link', '')
-                
-                if not title or not link:
-                    continue
-
-                # Convert struct_time to UNIX timestamp
-                unix_ts = None
-                for ts_field in ['published_parsed', 'updated_parsed']:
-                    ts = entry.get(ts_field)
-                    if ts:
-                        try:
-                            unix_ts = time.mktime(ts)
-                        except (OverflowError, ValueError):
-                            pass
-                        break
-                
-                if unix_ts is None:
-                    unix_ts = now
-                
-                age_hours = (now - unix_ts) / 3600
-                if age_hours > 48:
-                    continue
-                
-                # For DesiDime, try to get the actual merchant URL
-                final_url = link
-                if 'desidime' in name:
-                    merchant_url = _try_extract_merchant_url(link)
-                    if merchant_url:
-                        final_url = merchant_url
-                        logger.info(f"Extracted merchant URL from DesiDime: {merchant_url[:60]}")
-                
-                all_deals.append({
-                    "title": title,
-                    "url": final_url,
-                    "source": f"rss_{name}",
-                    "timestamp": unix_ts
-                })
-                count += 1
-            
-            logger.info(f"Kept {count} recent deals from {name}")
-        except Exception as e:
-            logger.error(f"Error fetching RSS deals from {name}: {e}")
-            
-    logger.info(f"Total recent RSS deals: {len(all_deals)}")
+        deals = _fetch_single_feed(name, url, now)
+        all_deals.extend(deals)
+    
+    # Fetch from deal APIs
+    for api in DEAL_APIS:
+        deals = _fetch_single_feed(api["name"], api["url"], now)
+        all_deals.extend(deals)
+    
+    logger.info(f"RSS: Total {len(all_deals)} recent deals from all feeds")
     return all_deals
