@@ -1,8 +1,7 @@
 *.py[cod]
 __pycache__/
 .env
-data/*.db
-data/*.log
+data/
 *.exe
 *.bin
 .vscode/

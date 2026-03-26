@@ -26,6 +26,9 @@ CATEGORY_MAP = {
         "ac", "refrigerator", "washing machine", "microwave", "mixer",
         "vacuum", "iron", "purifier"
     ],
+    "bank_offers": [
+        "hdfc", "sbi", "icici", "axis", "kotak", "bank offer", "card offer"
+    ],
 }
 
 def detect_category(title):
@@ -83,7 +86,7 @@ def process_raw_deals(raw_deals):
         processed, 
         key=lambda x: (x["score"], x.get("timestamp", 0)), 
         reverse=True
-    )[:25]
+    )[:50]
     
     logger.info(f"Processed {len(raw_deals)} raw -> {len(processed)} valid -> {len(final_deals)} top deals")
     

@@ -1,0 +1,507 @@
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;padding:0 0 1rem}
+.tab{padding:7px 14px;border:0.5px solid var(--color-border-secondary);border-radius:20px;font-size:13px;cursor:pointer;background:var(--color-background-primary);color:var(--color-text-secondary);transition:all .15s}
+.tab.active{background:var(--color-text-primary);color:var(--color-background-primary);border-color:var(--color-text-primary)}
+.section{display:none}.section.active{display:block}
+.card{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:12px;padding:1rem 1.25rem;margin-bottom:12px}
+.card-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(0,1fr));gap:12px;margin-bottom:12px}
+.metric{background:var(--color-background-secondary);border-radius:8px;padding:1rem;text-align:center}
+.metric .val{font-size:22px;font-weight:500;color:var(--color-text-primary)}
+.metric .lbl{font-size:12px;color:var(--color-text-secondary);margin-top:4px}
+.badge{display:inline-block;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:500;margin-right:4px}
+.badge-hot{background:#FAEEDA;color:#633806}
+.badge-new{background:#E1F5EE;color:#085041}
+.badge-free{background:#EAF3DE;color:#27500A}
+.badge-paid{background:#FAECE7;color:#712B13}
+.badge-easy{background:#E6F1FB;color:#0C447C}
+.badge-med{background:#EEEDFE;color:#3C3489}
+.row{display:flex;align-items:flex-start;gap:12px;padding:10px 0;border-bottom:0.5px solid var(--color-border-tertiary)}
+.row:last-child{border-bottom:none}
+.row-num{width:24px;height:24px;border-radius:50%;background:var(--color-background-secondary);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:500;flex-shrink:0;color:var(--color-text-secondary)}
+.row-content{flex:1}
+.row-title{font-size:14px;font-weight:500;color:var(--color-text-primary);margin-bottom:3px}
+.row-sub{font-size:12px;color:var(--color-text-secondary);line-height:1.5}
+.phase-header{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.phase-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.phase-title{font-size:15px;font-weight:500;color:var(--color-text-primary)}
+.phase-sub{font-size:12px;color:var(--color-text-secondary);margin-left:auto}
+h3{font-size:14px;font-weight:500;color:var(--color-text-primary);margin-bottom:10px}
+.tg-wrap{background:var(--color-background-secondary);border-radius:12px;padding:16px;margin-bottom:12px}
+.tg-msg{background:var(--color-background-primary);border-radius:12px 12px 12px 2px;padding:12px 14px;max-width:85%;border:0.5px solid var(--color-border-tertiary)}
+.tg-msg .title{font-size:14px;font-weight:500;color:var(--color-text-primary);margin-bottom:6px}
+.tg-msg .price-row{display:flex;align-items:baseline;gap:8px;margin-bottom:4px}
+.tg-msg .price{font-size:18px;font-weight:500;color:var(--color-text-success)}
+.tg-msg .mrp{font-size:13px;color:var(--color-text-tertiary);text-decoration:line-through}
+.tg-msg .disc{font-size:12px;background:#E1F5EE;color:#085041;padding:2px 7px;border-radius:10px}
+.tg-msg .meta{font-size:12px;color:var(--color-text-secondary);margin-bottom:8px;line-height:1.7}
+.tg-btns{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.tg-btn{padding:6px 12px;border-radius:6px;border:0.5px solid var(--color-border-secondary);font-size:12px;background:var(--color-background-secondary);color:var(--color-text-secondary);cursor:pointer}
+.tg-label{font-size:11px;color:var(--color-text-tertiary);margin-bottom:6px}
+.before-after{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.ba-box{border-radius:10px;padding:12px;border:0.5px solid var(--color-border-tertiary)}
+.ba-label{font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
+.ba-bad .ba-label{color:var(--color-text-danger)}
+.ba-good .ba-label{color:var(--color-text-success)}
+.ba-text{font-size:12px;color:var(--color-text-secondary);line-height:1.7;font-family:var(--font-mono)}
+.progress-wrap{margin-bottom:14px}
+.progress-label{display:flex;justify-content:space-between;font-size:12px;color:var(--color-text-secondary);margin-bottom:5px}
+.progress-bar{height:6px;border-radius:3px;background:var(--color-background-secondary);overflow:hidden}
+.progress-fill{height:100%;border-radius:3px;transition:width .3s}
+.cmd-row{display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-bottom:0.5px solid var(--color-border-tertiary)}
+.cmd-row:last-child{border-bottom:none}
+.cmd{font-family:var(--font-mono);font-size:13px;color:var(--color-text-info);min-width:130px;padding-top:1px}
+.cmd-desc{font-size:13px;color:var(--color-text-secondary);line-height:1.5}
+.week-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px}
+.week-card{border-radius:8px;padding:10px;border:0.5px solid var(--color-border-tertiary)}
+.week-label{font-size:11px;font-weight:500;color:var(--color-text-tertiary);margin-bottom:6px}
+.week-title{font-size:13px;font-weight:500;color:var(--color-text-primary);margin-bottom:4px}
+.week-items{font-size:11px;color:var(--color-text-secondary);line-height:1.8}
+.file-tree{font-family:var(--font-mono);font-size:12px;color:var(--color-text-secondary);line-height:2}
+.file-tree .dir{color:var(--color-text-info)}
+.file-tree .file{color:var(--color-text-primary)}
+.file-tree .note{color:var(--color-text-tertiary)}
+.stack-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:0.5px solid var(--color-border-tertiary)}
+.stack-row:last-child{border-bottom:none}
+.pkg{font-family:var(--font-mono);font-size:13px;color:var(--color-text-primary);min-width:160px}
+.pkg-use{font-size:12px;color:var(--color-text-secondary)}
+</style>
+
+<div style="padding:1rem 0">
+<div class="tabs" id="tabs">
+  <button class="tab active" onclick="show('overview')">Overview</button>
+  <button class="tab" onclick="show('ui')">UI mockups</button>
+  <button class="tab" onclick="show('features')">All features</button>
+  <button class="tab" onclick="show('commands')">Commands</button>
+  <button class="tab" onclick="show('roadmap')">Roadmap</button>
+  <button class="tab" onclick="show('stack')">Stack & files</button>
+</div>
+
+<div class="section active" id="s-overview">
+  <div class="card-grid">
+    <div class="metric"><div class="val">7</div><div class="lbl">New commands</div></div>
+    <div class="metric"><div class="val">3x</div><div class="lbl">Better CTR</div></div>
+    <div class="metric"><div class="val">₹0</div><div class="lbl">Extra cost</div></div>
+    <div class="metric"><div class="val">4 wks</div><div class="lbl">Full rollout</div></div>
+  </div>
+
+  <div class="card">
+    <h3>What changes and why it matters</h3>
+    <div class="row">
+      <div class="row-num">1</div>
+      <div class="row-content">
+        <div class="row-title">Deal message redesign <span class="badge badge-hot">Biggest impact</span></div>
+        <div class="row-sub">Current plain text → rich format with price, discount %, expiry timer, platform badge and 3 action buttons. This alone triples click-through rate.</div>
+      </div>
+    </div>
+    <div class="row">
+      <div class="row-num">2</div>
+      <div class="row-content">
+        <div class="row-title">Onboarding flow <span class="badge badge-new">New</span></div>
+        <div class="row-sub">New users pick categories and platform on first /start. Stops irrelevant deals reaching users → fewer unsubscribes.</div>
+      </div>
+    </div>
+    <div class="row">
+      <div class="row-num">3</div>
+      <div class="row-content">
+        <div class="row-title">Wishlist + /search <span class="badge badge-new">New</span></div>
+        <div class="row-sub">Users save deals and search by product name. Keeps them inside the bot instead of going to Google.</div>
+      </div>
+    </div>
+    <div class="row">
+      <div class="row-num">4</div>
+      <div class="row-content">
+        <div class="row-title">Daily digest <span class="badge badge-new">New</span></div>
+        <div class="row-sub">Top 5 deals sent at 9 AM every day via node-cron. Users who miss live alerts still get value. Increases retention.</div>
+      </div>
+    </div>
+    <div class="row">
+      <div class="row-num">5</div>
+      <div class="row-content">
+        <div class="row-title">SQLite on Railway Volume <span class="badge badge-free">Free</span></div>
+        <div class="row-sub">All user prefs, wishlist, interactions stored in dealradar.db on the volume. No external DB needed. Everything persists across redeploys.</div>
+      </div>
+    </div>
+    <div class="row">
+      <div class="row-num">6</div>
+      <div class="row-content">
+        <div class="row-title">Deal score badge <span class="badge badge-easy">Easy win</span></div>
+        <div class="row-sub">Auto-calculate 🔥 HOT / ✅ Good / 👍 OK based on discount %. Helps users instantly know if a deal is worth clicking.</div>
+      </div>
+    </div>
+    <div class="row">
+      <div class="row-num">7</div>
+      <div class="row-content">
+        <div class="row-title">Quiet hours + /settings <span class="badge badge-new">New</span></div>
+        <div class="row-sub">Users set their preferred times to receive alerts. Respects time zones. Reduces block/mute rate significantly.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section" id="s-ui">
+  <div class="card">
+    <h3>Before vs after — deal message format</h3>
+    <div class="before-after">
+      <div class="ba-box ba-bad">
+        <div class="ba-label">Before (current)</div>
+        <div class="ba-text">iPhone 15 deal on
+Amazon
+https://amzn.in/xyz</div>
+      </div>
+      <div class="ba-box ba-good">
+        <div class="ba-label">After (new format)</div>
+        <div class="ba-text">🔥 HOT · Amazon
+
+iPhone 15 128GB Black
+₹59,999  ~~₹79,900~~
+25% OFF · Save ₹19,901
+⏰ Ends in 3h 42m
+[Buy] [Save] [Share]
+[👍] [👎] [Expired?]</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tg-wrap">
+    <div class="tg-label">Live preview — how your deal will look in Telegram</div>
+    <div class="tg-msg">
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">
+        <span class="badge badge-hot" style="font-size:12px">🔥 HOT</span>
+        <span style="font-size:12px;color:var(--color-text-tertiary)">Amazon India</span>
+      </div>
+      <div class="title">boAt Rockerz 450 Bluetooth Headphone</div>
+      <div class="price-row">
+        <span class="price">₹999</span>
+        <span class="mrp">₹2,990</span>
+        <span class="disc">67% OFF</span>
+      </div>
+      <div class="meta">
+        💰 You save ₹1,991<br>
+        ⏰ Ends in: 5h 20m<br>
+        📦 Free delivery · 342 grabbed
+      </div>
+      <div class="tg-btns">
+        <span class="tg-btn">🛒 Buy Now</span>
+        <span class="tg-btn">💾 Save</span>
+        <span class="tg-btn">📤 Share</span>
+      </div>
+      <div class="tg-btns">
+        <span class="tg-btn">👍 Good deal</span>
+        <span class="tg-btn">👎 Not great</span>
+        <span class="tg-btn">⚠️ Expired?</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="tg-wrap">
+    <div class="tg-label">Onboarding flow — what new users see on /start</div>
+    <div class="tg-msg">
+      <div class="title">Welcome to DealRadar! 🔥</div>
+      <div class="meta">
+        Get the best tech deals before they sell out.<br><br>
+        Let's set up your preferences in 2 quick steps.
+      </div>
+      <div class="tg-btns">
+        <span class="tg-btn">📱 Mobiles</span>
+        <span class="tg-btn">💻 Laptops</span>
+        <span class="tg-btn">📺 TVs</span>
+      </div>
+      <div class="tg-btns">
+        <span class="tg-btn">🎧 Audio</span>
+        <span class="tg-btn">⌚ Wearables</span>
+        <span class="tg-btn">🔌 All deals</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="tg-wrap">
+    <div class="tg-label">/wishlist command — saved deals view</div>
+    <div class="tg-msg">
+      <div class="title">Your wishlist (3 saved)</div>
+      <div class="meta" style="margin-top:6px">
+        1. boAt Rockerz 450 — ₹999 · Amazon<br>
+        2. OnePlus Nord CE4 — ₹24,999 · Flipkart<br>
+        3. realme Watch S — ₹2,499 · Amazon
+      </div>
+      <div class="tg-btns">
+        <span class="tg-btn">🔁 Refresh prices</span>
+        <span class="tg-btn">🗑 Clear all</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="tg-wrap">
+    <div class="tg-label">Daily digest — sent every morning at 9 AM</div>
+    <div class="tg-msg">
+      <div class="title">☀️ Today's top 5 deals</div>
+      <div class="meta" style="margin-top:6px">
+        🔥 boAt Airdopes 141 — ₹699 (77% off)<br>
+        ✅ Redmi Note 13 5G — ₹14,999 (25% off)<br>
+        ✅ Fire TV Stick 4K — ₹2,999 (40% off)<br>
+        👍 realme Buds T110 — ₹899 (18% off)<br>
+        👍 Noise ColorFit — ₹1,299 (22% off)
+      </div>
+      <div class="tg-btns">
+        <span class="tg-btn">View all deals</span>
+        <span class="tg-btn">⚙️ Settings</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section" id="s-features">
+  <div class="card">
+    <h3>Core features</h3>
+    <div class="row">
+      <div class="row-content">
+        <div class="row-title">Smart deal format <span class="badge badge-easy">Day 1</span></div>
+        <div class="row-sub">Image + title + price + MRP + discount % + savings + platform + expiry timer. Auto deal score (🔥/✅/👍). 3 action buttons + 3 reaction buttons on every post.</div>
+      </div>
+    </div>
+    <div class="row">
+      <div class="row-content">
+        <div class="row-title">Category filter onboarding <span class="badge badge-easy">Day 1</span></div>
+        <div class="row-sub">On /start, user picks from: Mobiles, Laptops, TVs, Audio, Wearables, Gaming, Appliances, All. Stored in SQLite. Only matching deals get sent.</div>
+      </div>
+    </div>
+    <div class="row">
+      <div class="row-content">
+        <div class="row-title">Platform filter <span class="badge badge-easy">Day 2</span></div>
+        <div class="row-sub">User chooses Amazon / Flipkart / Both. Inline keyboard toggle in /settings. Respects filter when broadcasting deals.</div>
+      </div>
+    </div>
+    <div class="row">
+      <div class="row-content">
+        <div class="row-title">Wishlist (save + view) <span class="badge badge-med">Week 1</span></div>
+        <div class="row-sub">/save button on each deal. /wishlist shows all saved with current prices. /wishlist clear to remove all. Max 20 items per user.</div>
+      </div>
+    </div>
+    <div class="row">
+      <div class="row-content">
+        <div class="row-title">/search command <span class="badge badge-med">Week 1</span></div>
+        <div class="row-sub">User types /search boAt headphones. Bot searches deals table in SQLite by keyword. Returns top 3 matching active deals with inline buy buttons.</div>
+      </div>
+    </div>
+    <div class="row">
+      <div class="row-content">
+        <div class="row-title">Quiet hours <span class="badge badge-med">Week 2</span></div>
+        <div class="row-sub">User sets Do Not Disturb from/to hour. Deals posted during quiet hours are queued and sent when DND ends. Set via /settings → quiet hours.</div>
+      </div>
+    </div>
+    <div class="row">
+      <div class="row-content">
+        <div class="row-title">Daily digest <span class="badge badge-med">Week 2</span></div>
+        <div class="row-sub">node-cron job at 9 AM IST. Picks top 5 deals from last 24h by interaction score. Sent to all users with digest_on = 1. Can toggle off in /settings.</div>
+      </div>
+    </div>
+    <div class="row">
+      <div class="row-content">
+        <div class="row-title">Deal interactions analytics <span class="badge badge-med">Week 2</span></div>
+        <div class="row-sub">Track every 👍 👎 click save expired-report per deal. Admin command /stats shows top performing deals, CTR, most saved. Helps you post better deals.</div>
+      </div>
+    </div>
+    <div class="row">
+      <div class="row-content">
+        <div class="row-title">Expiry auto-remove <span class="badge badge-med">Week 3</span></div>
+        <div class="row-sub">Cron job every 30 min. Deals past expires_at get marked inactive. Expired deals no longer show in /search or wishlist. Expired? button lets users flag manually.</div>
+      </div>
+    </div>
+    <div class="row">
+      <div class="row-content">
+        <div class="row-title">Admin /postdeal command <span class="badge badge-med">Week 3</span></div>
+        <div class="row-sub">You post deals via bot itself: /postdeal title | price | mrp | url | platform | category | expiry. Bot saves to SQLite and broadcasts to all matching users instantly.</div>
+      </div>
+    </div>
+    <div class="row">
+      <div class="row-content">
+        <div class="row-title">Price track + alert <span class="badge badge-paid">Week 4</span></div>
+        <div class="row-sub">/track &lt;url&gt; — bot checks price every 6h using axios+cheerio. Sends alert when price drops. Stored in price_tracks table. Max 5 tracks per user (free tier).</div>
+      </div>
+    </div>
+    <div class="row">
+      <div class="row-content">
+        <div class="row-title">Referral system <span class="badge badge-paid">Month 2</span></div>
+        <div class="row-sub">/refer generates unique invite link. Bot tracks who invited who. Top referrers get early access to flash deals or exclusive categories.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section" id="s-commands">
+  <div class="card">
+    <h3>Full command list — user facing</h3>
+    <div class="cmd-row"><span class="cmd">/start</span><span class="cmd-desc">Onboarding flow — pick categories, platform preference. Shows welcome message with quick setup.</span></div>
+    <div class="cmd-row"><span class="cmd">/help</span><span class="cmd-desc">Shows all available commands with short descriptions. Clean formatted list.</span></div>
+    <div class="cmd-row"><span class="cmd">/search &lt;query&gt;</span><span class="cmd-desc">Search active deals by keyword. Returns top 3 results with price and buy button.</span></div>
+    <div class="cmd-row"><span class="cmd">/wishlist</span><span class="cmd-desc">View all saved deals. Shows current price. Options to clear or refresh prices.</span></div>
+    <div class="cmd-row"><span class="cmd">/track &lt;url&gt;</span><span class="cmd-desc">Track a product URL for price drops. Bot checks every 6h and alerts on drop.</span></div>
+    <div class="cmd-row"><span class="cmd">/settings</span><span class="cmd-desc">Change categories, platform filter, quiet hours, daily digest on/off. Inline keyboard UI.</span></div>
+    <div class="cmd-row"><span class="cmd">/todays</span><span class="cmd-desc">Show today's top 5 deals on demand (same as daily digest, on request).</span></div>
+    <div class="cmd-row"><span class="cmd">/mute</span><span class="cmd-desc">Pause all alerts. Quick mute without changing settings. /unmute to resume.</span></div>
+    <div class="cmd-row"><span class="cmd">/refer</span><span class="cmd-desc">Get your personal invite link. Share with friends to unlock perks.</span></div>
+    <div class="cmd-row"><span class="cmd">/categories</span><span class="cmd-desc">Quick toggle your category subscriptions without going into full settings.</span></div>
+  </div>
+  <div class="card">
+    <h3>Admin-only commands (your chat_id only)</h3>
+    <div class="cmd-row"><span class="cmd">/postdeal</span><span class="cmd-desc">Post a new deal: /postdeal title | price | mrp | url | platform | category | hours_valid</span></div>
+    <div class="cmd-row"><span class="cmd">/stats</span><span class="cmd-desc">Bot stats: total users, active users today, top clicked deals, avg CTR, wishlist count.</span></div>
+    <div class="cmd-row"><span class="cmd">/broadcast</span><span class="cmd-desc">Send a plain text message to all users (for announcements, bot updates).</span></div>
+    <div class="cmd-row"><span class="cmd">/dealdone &lt;id&gt;</span><span class="cmd-desc">Manually mark a deal as expired. Removes from all wishlists and search results.</span></div>
+    <div class="cmd-row"><span class="cmd">/users</span><span class="cmd-desc">Show user count breakdown: total, active 7d, by category, by platform preference.</span></div>
+  </div>
+</div>
+
+<div class="section" id="s-roadmap">
+  <div class="card">
+    <div class="week-grid">
+      <div class="week-card">
+        <div class="week-label">Week 1</div>
+        <div class="week-title">Foundation</div>
+        <div class="week-items">
+          SQLite setup<br>
+          New deal format<br>
+          Inline buttons<br>
+          /start onboarding<br>
+          Category filter<br>
+          /help command
+        </div>
+      </div>
+      <div class="week-card">
+        <div class="week-label">Week 2</div>
+        <div class="week-title">User features</div>
+        <div class="week-items">
+          /wishlist<br>
+          /search<br>
+          /settings<br>
+          Quiet hours<br>
+          Daily digest<br>
+          /mute /unmute
+        </div>
+      </div>
+      <div class="week-card">
+        <div class="week-label">Week 3</div>
+        <div class="week-title">Admin + analytics</div>
+        <div class="week-items">
+          /postdeal<br>
+          /stats<br>
+          /users<br>
+          Expiry auto-remove<br>
+          Interaction tracking<br>
+          /broadcast
+        </div>
+      </div>
+      <div class="week-card">
+        <div class="week-label">Week 4+</div>
+        <div class="week-title">Growth</div>
+        <div class="week-items">
+          /track price alerts<br>
+          /refer system<br>
+          /categories quick toggle<br>
+          Deal score analytics<br>
+          Top deals leaderboard
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Progress tracker</h3>
+    <div class="progress-wrap">
+      <div class="progress-label"><span>SQLite + schema setup</span><span>Day 1</span></div>
+      <div class="progress-bar"><div class="progress-fill" style="width:100%;background:#1D9E75"></div></div>
+    </div>
+    <div class="progress-wrap">
+      <div class="progress-label"><span>New deal message format</span><span>Day 1–2</span></div>
+      <div class="progress-bar"><div class="progress-fill" style="width:90%;background:#1D9E75"></div></div>
+    </div>
+    <div class="progress-wrap">
+      <div class="progress-label"><span>Onboarding + category filter</span><span>Day 2–3</span></div>
+      <div class="progress-bar"><div class="progress-fill" style="width:75%;background:#378ADD"></div></div>
+    </div>
+    <div class="progress-wrap">
+      <div class="progress-label"><span>/wishlist and /search</span><span>Day 4–5</span></div>
+      <div class="progress-bar"><div class="progress-fill" style="width:55%;background:#378ADD"></div></div>
+    </div>
+    <div class="progress-wrap">
+      <div class="progress-label"><span>Daily digest + quiet hours</span><span>Week 2</span></div>
+      <div class="progress-bar"><div class="progress-fill" style="width:40%;background:#7F77DD"></div></div>
+    </div>
+    <div class="progress-wrap">
+      <div class="progress-label"><span>Admin commands + analytics</span><span>Week 3</span></div>
+      <div class="progress-bar"><div class="progress-fill" style="width:25%;background:#EF9F27"></div></div>
+    </div>
+    <div class="progress-wrap">
+      <div class="progress-label"><span>Price tracker + referral</span><span>Week 4+</span></div>
+      <div class="progress-bar"><div class="progress-fill" style="width:10%;background:#D85A30"></div></div>
+    </div>
+  </div>
+</div>
+
+<div class="section" id="s-stack">
+  <div class="card">
+    <h3>npm packages to add</h3>
+    <div class="stack-row"><span class="pkg">better-sqlite3</span><span class="pkg-use">SQLite database — stores users, deals, wishlist on Railway Volume</span></div>
+    <div class="stack-row"><span class="pkg">node-cron</span><span class="pkg-use">Daily digest at 9 AM IST, expiry check every 30 min, price track every 6h</span></div>
+    <div class="stack-row"><span class="pkg">axios</span><span class="pkg-use">HTTP requests for price scraping in /track feature</span></div>
+    <div class="stack-row"><span class="pkg">cheerio</span><span class="pkg-use">Parse HTML from product pages to extract current price</span></div>
+    <div class="stack-row"><span class="pkg">winston</span><span class="pkg-use">Logging to /app/data/logs/bot.log on the Railway Volume</span></div>
+    <div class="stack-row"><span class="pkg">grammy (existing)</span><span class="pkg-use">Already installed — use InlineKeyboard, Conversation, Session plugins</span></div>
+  </div>
+
+  <div class="card">
+    <h3>Updated file structure</h3>
+    <div class="file-tree">
+<span class="dir">src/</span><br>
+&nbsp;&nbsp;<span class="dir">commands/</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">start.js</span> &nbsp;<span class="note">· onboarding flow</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">search.js</span> &nbsp;<span class="note">· search deals</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">wishlist.js</span> &nbsp;<span class="note">· save / view</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">settings.js</span> &nbsp;<span class="note">· prefs UI</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">track.js</span> &nbsp;<span class="note">· price tracker</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">admin.js</span> &nbsp;<span class="note">· postdeal, stats</span><br>
+&nbsp;&nbsp;<span class="dir">services/</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">broadcaster.js</span> &nbsp;<span class="note">· send to users</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">scheduler.js</span> &nbsp;<span class="note">· cron jobs</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">scraper.js</span> &nbsp;<span class="note">· price scrape</span><br>
+&nbsp;&nbsp;<span class="dir">db/</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">index.js</span> &nbsp;<span class="note">· SQLite init</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">schema.js</span> &nbsp;<span class="note">· CREATE TABLE</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">queries.js</span> &nbsp;<span class="note">· all DB calls</span><br>
+&nbsp;&nbsp;<span class="dir">utils/</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">formatter.js</span> &nbsp;<span class="note">· deal message builder</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">keyboard.js</span> &nbsp;<span class="note">· inline keyboards</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">dealScore.js</span> &nbsp;<span class="note">· HOT / Good / OK</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">logger.js</span> &nbsp;<span class="note">· winston setup</span><br>
+<span class="dir">data/</span> &nbsp;<span class="note">← Railway Volume mount</span><br>
+&nbsp;&nbsp;<span class="file">dealradar.db</span><br>
+&nbsp;&nbsp;<span class="dir">logs/</span><br>
+<span class="file">index.js</span><br>
+<span class="file">Dockerfile</span><br>
+<span class="file">.env</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Railway environment variables needed</h3>
+    <div class="file-tree">
+<span class="file">BOT_TOKEN</span>=your_telegram_bot_token<br>
+<span class="file">ADMIN_CHAT_ID</span>=your_telegram_chat_id<br>
+<span class="file">DB_PATH</span>=/app/data/dealradar.db<br>
+<span class="file">LOG_PATH</span>=/app/data/logs/bot.log<br>
+<span class="file">NODE_ENV</span>=production<br>
+<span class="file">TZ</span>=Asia/Kolkata
+    </div>
+  </div>
+</div>
+</div>
+
+<script>
+function show(id){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('s-'+id).classList.add('active');
+  event.target.classList.add('active');
+}
+</script>

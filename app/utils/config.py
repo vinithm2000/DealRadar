@@ -12,5 +12,7 @@ class Config:
     EARNKARO_PASSWORD = os.getenv("EARNKARO_PASSWORD", "")
     ADMIN_ID = os.getenv("ADMIN_ID")
     SCHEDULE_INTERVAL_MIN = int(os.getenv("SCHEDULE_INTERVAL_MIN", "15"))
+    # Telegram channel for public deal posts (e.g. "@GetDealRadar")
+    CHANNEL_ID = os.getenv("CHANNEL_ID", "")
 
 config = Config()

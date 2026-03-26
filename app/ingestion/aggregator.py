@@ -16,7 +16,16 @@ def aggregate_all_sources():
     except Exception as e:
         logger.error(f"Aggregator: Merchant scraper failed: {e}", exc_info=True)
     
-    # 2. Reddit deals
+    # 2. Bank Card Offers
+    try:
+        from .bank_offers import fetch_bank_offers
+        bank_deals = fetch_bank_offers()
+        all_deals.extend(bank_deals)
+        logger.info(f"Aggregator: {len(bank_deals)} bank card offers")
+    except Exception as e:
+        logger.error(f"Aggregator: Bank offers scraper failed: {e}", exc_info=True)
+        
+    # 3. Reddit deals
     try:
         from .reddit import fetch_reddit_deals
         reddit_deals = fetch_reddit_deals()
@@ -25,7 +34,7 @@ def aggregate_all_sources():
     except Exception as e:
         logger.error(f"Aggregator: Reddit source failed: {e}", exc_info=True)
     
-    # 3. RSS/Atom feeds  
+    # 4. RSS/Atom feeds  
     try:
         from .rss import fetch_rss_deals
         rss_deals = fetch_rss_deals()
@@ -33,6 +42,7 @@ def aggregate_all_sources():
         logger.info(f"Aggregator: {len(rss_deals)} deals from RSS")
     except Exception as e:
         logger.error(f"Aggregator: RSS source failed: {e}", exc_info=True)
+
     
     logger.info(f"Aggregator: Total {len(all_deals)} deals from all sources")
     return all_deals
